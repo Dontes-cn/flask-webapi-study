@@ -10,6 +10,8 @@ flask = "*"
 flask-wtf = "*"
 flask-httpauth = "*"
 flask-restful = "*"
+mysql-python = "*"
+flask-sqlalchemy = "*"
 
 [requires]
 python_version = "3.7"

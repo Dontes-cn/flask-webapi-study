@@ -1,24 +1,100 @@
 #!flask/bin/python
-from flask import Flask,jsonify,abort,make_response,request,url_for
-from flask_restful import Api, Resource
+from flask import Flask,jsonify,abort,make_response,request,url_for,Response
+from flask_httpauth import HTTPBasicAuth
+from flask_restful import Api, Resource, reqparse, marshal_with
+from flask_sqlalchemy import SQLAlchemy
+
+import uuid
+import mysql_connect
+from models import *
 
 
 app = Flask(__name__)
+app.config.from_object(mysql_connect)
+api = Api(app)
 auth = HTTPBasicAuth()
-
+with app.app_context():
+    db.init_app(app)
+        
 
 tasks = [
     {
         'id':1,
-        'title':'fuck',
+        'title':'yesyesyes',
         'done':False
         },
     {
         'id':2,
-        'title':'your mom',
+        'title':'nonono',
         'done':True
         }
     ]
+
+
+class Batch11API(Resource):
+    def get(self, id):
+        batch11_item = Batch11.query.filter(Batch11.posid == id).first()
+        print(batch11_item.city)
+        return marshal_with(batch11_item)
+api.add_resource(Batch11API, '/batch11/<int:id>', endpoint = 'batch11')
+
+
+class UserAPI(Resource):
+    def get(self, id):
+        pass
+
+    def put(self, id):
+        pass
+
+    def delete(self, id):
+        pass
+
+api.add_resource(UserAPI, '/users/<int:id>', endpoint = 'user')
+
+class TaskListAPI(Resource):
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('title', type = str, required = True,
+            help = 'No task title provided', location = 'json')
+        super(TaskListAPI, self).__init__()
+
+    def get(self):
+        return tasks
+
+    def post(self):
+        if not request.json or not 'title' in request.json:
+            abort(400)
+        task = {
+            'id': tasks[-1]['id'] + 1,
+            'title': request.json['title'],
+            'done':False
+            }
+        tasks.append(task)
+        return task,201
+
+class TaskAPI(Resource):
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('title', type = str, location = 'json')
+        self.reqparse.add_argument('done', type = bool, location = 'json')
+        super(TaskAPI, self).__init__()
+
+    def get(self, id):
+        task = filter(lambda t: t['id'] == id, tasks)
+        task = list(task)
+        if not task:
+            abort(404)
+        return task[0]
+
+    def put(self, id):
+        pass
+
+    def delete(self, id):
+        pass
+
+api.add_resource(TaskListAPI, '/todo/api/v2.0/tasks', endpoint = 'tasks')
+api.add_resource(TaskAPI, '/todo/api/v2.0/task/<int:id>', endpoint = 'task')
+        
 
 
 @auth.get_password
@@ -30,10 +106,11 @@ def get_password(username):
 
 @auth.error_handler
 def unauthorized():
-    return make_response(jsonify({'error': 'Unauthoried accss'}), 401)
+    return make_response(jsonify({'error': 'Unauthoried accss'}), 403)
 
 
 @app.route('/todo/api/v1.0/tasks',methods=['GET'])
+@auth.login_required
 def get_tasks():
     return jsonify({'tasks': tasks})
 
