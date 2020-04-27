@@ -15,7 +15,7 @@ api = Api(app)
 auth = HTTPBasicAuth()
 with app.app_context():
     db.init_app(app)
-        
+
 
 tasks = [
     {
@@ -34,9 +34,20 @@ tasks = [
 class Batch11API(Resource):
     def get(self, id):
         batch11_item = Batch11.query.filter(Batch11.posid == id).first()
-        print(batch11_item.city)
-        return marshal_with(batch11_item)
-api.add_resource(Batch11API, '/batch11/<int:id>', endpoint = 'batch11')
+        batch11_item = batch11_item.to_dict()
+        return batch11_item
+
+    def post(self):
+        batch11_item_last = Batch11.query.order_by(Batch11.posid.desc()).first()
+        posid = batch11_item_last.posid + 1
+        province = request.json['province']
+        city = request.json['city']
+        batch11_item = Batch11(posid=posid,province=province,city=city)
+        db.session.add(batch11_item)
+        db.session.flush()
+        db.session.commit()
+        return batch11_item.to_dict()
+api.add_resource(Batch11API, '/batch11', endpoint = 'batch11')
 
 
 class UserAPI(Resource):
@@ -94,7 +105,7 @@ class TaskAPI(Resource):
 
 api.add_resource(TaskListAPI, '/todo/api/v2.0/tasks', endpoint = 'tasks')
 api.add_resource(TaskAPI, '/todo/api/v2.0/task/<int:id>', endpoint = 'task')
-        
+
 
 
 @auth.get_password

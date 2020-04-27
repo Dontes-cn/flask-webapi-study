@@ -9,7 +9,7 @@ db = SQLAlchemy()
 class Batch11(db.Model):
     __tablename__ = 'batch11'
 
-    posid = db.Column(db.Integer, primary_key=True, info='序号')
+    posid = db.Column(db.Integer, autoincrement=True, primary_key=True, info='序号')
     province = db.Column(db.String(32), info='省')
     city = db.Column(db.String(32), info='市')
     county = db.Column(db.String(32), info='县')
@@ -28,3 +28,6 @@ class Batch11(db.Model):
     contract = db.Column(db.String(200), info='合同名称')
     address = db.Column(db.String(200), info='合同源地址')
     contractnum = db.Column(db.String(30), nullable=False, server_default=db.FetchedValue(), info='合同编号')
+
+    def to_dict(self):
+        return {c.name: getattr(self, c.name, None) for c in self.__table__.columns}
